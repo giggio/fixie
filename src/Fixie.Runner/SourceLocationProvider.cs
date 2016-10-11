@@ -91,8 +91,11 @@
             const int lineNumberIndicatingHiddenLine = 16707566; //0xfeefee
 
             foreach (var instruction in body.Instructions)
-                if (instruction.SequencePoint != null && instruction.SequencePoint.StartLine != lineNumberIndicatingHiddenLine)
-                    return instruction.SequencePoint;
+            {
+                var sequencePoint = instruction.SequencePoint;
+                if (sequencePoint != null && sequencePoint.StartLine != lineNumberIndicatingHiddenLine)
+                    return sequencePoint;
+            }
 
             return null;
         }
