@@ -9,55 +9,66 @@
     public class SourceLocationProvider
     {
         readonly string assemblyPath;
-        IDictionary<string, TypeDefinition> types;
+        IDictionary<string, IDictionary<string, SourceLocation>> classMethodLocations;
 
         public SourceLocationProvider(string assemblyPath)
         {
             this.assemblyPath = assemblyPath;
-            types = null;
         }
 
         public bool TryGetSourceLocation(MethodGroup methodGroup, out SourceLocation sourceLocation)
         {
-            if (types == null)
-                types = CacheTypes(assemblyPath);
+            if (classMethodLocations == null)
+                classMethodLocations = CacheLocations(assemblyPath);
 
             var className = methodGroup.Class;
             var methodName = methodGroup.Method;
 
-            sourceLocation = GetMethods(className)
-                .Where(m => m.Name == methodName)
-                .Select(FirstOrDefaultSequencePoint)
-                .Where(x => x != null)
-                .OrderBy(x => x.StartLine)
-                .Select(x => new SourceLocation(x.Document.Url, x.StartLine))
-                .FirstOrDefault();
+            var standardizeTypeName = StandardizeTypeName(className);
+            if (classMethodLocations.ContainsKey(standardizeTypeName))
+            {
+                if (classMethodLocations[standardizeTypeName].ContainsKey(methodName))
+                {
+                    sourceLocation = classMethodLocations[standardizeTypeName][methodName];
+                    return true;
+                }
+            }
 
-            return sourceLocation != null;
+            sourceLocation = null;
+            return false;
         }
 
-        static IDictionary<string, TypeDefinition> CacheTypes(string assemblyPath)
+        static Dictionary<string, IDictionary<string, SourceLocation>> CacheLocations(string assemblyPath)
         {
+            var classMethodLocations = new Dictionary<string, IDictionary<string, SourceLocation>>();
+
             var readerParameters = new ReaderParameters { ReadSymbols = true };
             using (var module = ModuleDefinition.ReadModule(assemblyPath, readerParameters))
             {
-                var types = new Dictionary<string, TypeDefinition>();
-
                 foreach (var type in module.GetTypes())
-                    types[type.FullName] = type;
+                {
+                    if (!classMethodLocations.ContainsKey(type.FullName))
+                        classMethodLocations[type.FullName] = new Dictionary<string, SourceLocation>();
 
-                return types;
+                    foreach (var method in type.GetMethods())
+                    {
+                        var sequencePoint = FirstOrDefaultSequencePoint(method);
+                        if (sequencePoint != null)
+                        {
+                            if (!classMethodLocations[type.FullName].ContainsKey(method.Name))
+                            {
+                                classMethodLocations[type.FullName][method.Name] = new SourceLocation(sequencePoint.Document.Url, sequencePoint.StartLine);
+                            }
+                            else if (sequencePoint.StartLine < classMethodLocations[type.FullName][method.Name].LineNumber)
+                            {
+                                classMethodLocations[type.FullName][method.Name] = new SourceLocation(sequencePoint.Document.Url, sequencePoint.StartLine);
+                            }
+                        }
+                    }
+                }
             }
-        }
 
-        IEnumerable<MethodDefinition> GetMethods(string className)
-        {
-            TypeDefinition type;
-
-            if (types.TryGetValue(StandardizeTypeName(className), out type))
-                return type.GetMethods();
-            
-            return Enumerable.Empty<MethodDefinition>();
+            return classMethodLocations;
         }
 
         static SequencePoint FirstOrDefaultSequencePoint(MethodDefinition testMethod)
@@ -113,12 +124,10 @@
 
     static class TypeDefinitionShim
     {
-        static readonly MethodDefinition[] EmptyArray = new MethodDefinition[0];
-
         public static IEnumerable<MethodDefinition> GetMethods(this TypeDefinition self)
         {
             if (!self.HasMethods)
-                return EmptyArray;
+                return Enumerable.Empty<MethodDefinition>();
 
             return self.Methods.Where(method => !method.IsConstructor);
         }
