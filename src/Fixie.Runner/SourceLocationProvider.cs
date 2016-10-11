@@ -68,7 +68,7 @@
             if (TryGetAsyncStateMachineAttribute(testMethod, out asyncStateMachineAttribute))
                 testMethod = GetStateMachineMoveNextMethod(asyncStateMachineAttribute);
 
-            return FirstOrDefaultUnhiddenSequencePoint(testMethod.Body);
+            return FirstOrDefaultUnhiddenSequencePoint(testMethod);
         }
 
         static bool TryGetAsyncStateMachineAttribute(MethodDefinition method, out CustomAttribute attribute)
@@ -84,8 +84,10 @@
             return stateMachineMoveNextMethod;
         }
 
-        static SequencePoint FirstOrDefaultUnhiddenSequencePoint(MethodBody body)
+        static SequencePoint FirstOrDefaultUnhiddenSequencePoint(MethodDefinition testMethod)
         {
+            var body = testMethod.Body;
+
             const int lineNumberIndicatingHiddenLine = 16707566; //0xfeefee
 
             foreach (var instruction in body.Instructions)
