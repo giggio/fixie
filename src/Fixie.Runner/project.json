@@ -7,7 +7,7 @@
   "dependencies": {
     "Fixie": { "target": "project" },
     "Fixie.Execution": { "target": "project" },
-    "Mono.Cecil": "0.9.6.4",
+    "Mono.Cecil": "0.10.0-beta1-v2",
     "Newtonsoft.Json": "9.0.1"
   },
 
