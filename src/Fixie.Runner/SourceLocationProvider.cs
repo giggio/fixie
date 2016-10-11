@@ -5,7 +5,6 @@
     using System.Runtime.CompilerServices;
     using Mono.Cecil;
     using Mono.Cecil.Cil;
-    using Mono.Cecil.Rocks;
 
     public class SourceLocationProvider
     {
@@ -109,6 +108,19 @@
             //ECMA-335 specifies "/" instead of "+" to indicate a nested type.
 
             return className.Replace("+", "/");
+        }
+    }
+
+    static class TypeDefinitionShim
+    {
+        static readonly MethodDefinition[] EmptyArray = new MethodDefinition[0];
+
+        public static IEnumerable<MethodDefinition> GetMethods(this TypeDefinition self)
+        {
+            if (!self.HasMethods)
+                return EmptyArray;
+
+            return self.Methods.Where(method => !method.IsConstructor);
         }
     }
 }
