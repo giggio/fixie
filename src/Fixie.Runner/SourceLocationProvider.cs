@@ -40,14 +40,15 @@
         static IDictionary<string, TypeDefinition> CacheTypes(string assemblyPath)
         {
             var readerParameters = new ReaderParameters { ReadSymbols = true };
-            var module = ModuleDefinition.ReadModule(assemblyPath, readerParameters);
+            using (var module = ModuleDefinition.ReadModule(assemblyPath, readerParameters))
+            {
+                var types = new Dictionary<string, TypeDefinition>();
 
-            var types = new Dictionary<string, TypeDefinition>();
+                foreach (var type in module.GetTypes())
+                    types[type.FullName] = type;
 
-            foreach (var type in module.GetTypes())
-                types[type.FullName] = type;
-
-            return types;
+                return types;
+            }
         }
 
         IEnumerable<MethodDefinition> GetMethods(string className)
