@@ -92,7 +92,7 @@
 
             foreach (var instruction in body.Instructions)
             {
-                var sequencePoint = instruction.SequencePoint;
+                var sequencePoint = testMethod.DebugInformation.GetSequencePoint(instruction);
                 if (sequencePoint != null && sequencePoint.StartLine != lineNumberIndicatingHiddenLine)
                     return sequencePoint;
             }
