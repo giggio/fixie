@@ -4,8 +4,6 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Runtime.Serialization.Json;
-    using System.Text;
     using Assertions;
     using Fixie.Execution;
     using Fixie.Execution.Listeners;
@@ -144,14 +142,6 @@
             pass.ErrorMessage.ShouldBeNull();
             pass.ErrorStackTrace.ShouldBeNull();
             pass.Output.Lines().ShouldEqual("Console.Out: Pass", "Console.Error: Pass");
-        }
-
-        static T Deserialize<T>(string content)
-        {
-            var deserializer = new DataContractJsonSerializer(typeof(T));
-
-            using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(content)))
-                return (T)deserializer.ReadObject(stream);
         }
     }
 }

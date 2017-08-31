@@ -1,8 +1,11 @@
 ﻿namespace Fixie.Tests
 {
     using System;
+    using System.IO;
     using System.Reflection;
     using System.Runtime.CompilerServices;
+    using System.Runtime.Serialization.Json;
+    using System.Text;
     using Assertions;
     using Fixie.Execution;
     using static Utility;
@@ -42,6 +45,14 @@
 
         protected void Run(Listener listener)
             => Run<SampleTestClass>(listener, convention);
+
+        protected static T Deserialize<T>(string content)
+        {
+            var deserializer = new DataContractJsonSerializer(typeof(T));
+
+            using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(content)))
+                return (T)deserializer.ReadObject(stream);
+        }
 
         class Base
         {
